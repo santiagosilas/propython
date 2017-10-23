@@ -1,5 +1,5 @@
 # coding:utf-8
-import requests
+import requests, os, timeit
 from bs4 import BeautifulSoup as BS
 from decimal import Decimal
 
@@ -36,36 +36,59 @@ def listar_servidores_pagina(sopa):
     return servidores
     
 def obter_remuneracao_servidor(url_servidor):
+    sem_ficha, valor = 'Servidor sem ficha financeira', 0
+    info_nao_disp = 'Informação não disponibilizada'
     sopa_serv = BS(requests.get(url_servidor).content, 'html.parser')
     div_resumo = sopa_serv.find_all('div', id='resumo')[0]
     tag_a = div_resumo.find_all('a')[0]
     url_r = 'http://www.portaldatransparencia.gov.br' + tag_a.attrs['href']
     sopa_r = BS(requests.get(url_r).content, 'html.parser')
-    '''
-    Em div id='listagemConvenios', dentro de tbody, na 3 tr class="remuneracaodetalhe
-    '''
-    div_convenios = sopa_r.find_all('div', id='listagemConvenios')[0]
-    tbody = div_convenios.find_all('tbody')[0]
-    tr_rem = tbody.find_all('tr', class_='remuneracaodetalhe')[2]
-    coluna_valor = tr_rem.find_all('td', class_='colunaValor')[0]
-    valor = coluna_valor.get_text().replace('.', '').replace(',','.')
+    if sem_ficha not in sopa_r.prettify() and info_nao_disp not in sopa_r.prettify() :
+        '''
+        Em div id='listagemConvenios', dentro de tbody, na 3 tr class="remuneracaodetalhe
+        '''
+        div_convenios = sopa_r.find_all('div', id='listagemConvenios')[0]
+        
+        tbody = div_convenios.find_all('tbody')[0]
+        
+        tr_rem = tbody.find_all('tr', class_='remuneracaodetalhe')[2]
+
+        try:
+            coluna_valor = tr_rem.find_all('td', class_='colunaValor')[0]
+        except IndexError:
+            coluna_valor = tr_rem.find_all('td')
+            texto = coluna_valor.prettify()
+            print('\n\n\t', texto, '\n\n')
+            raise Exception('Erro ao obter valor!')
+        valor = coluna_valor.get_text().replace('.', '').replace(',','.')
     return valor
     
 def salvar_salarios_servidores():
+    filename = 'servidores.txt'
+    
+    if os.path.exists(filename):
+        os.remove(filename)
+        
     arquivo = open('servidores.txt', 'w')
-    for numero_pagina in range(5000):
+    for numero_pagina in range(1, 5000):
+        inicio = timeit.default_timer()
+        print('numero da pagina', numero_pagina)
         pagina = obter_pagina_servidores(numero_pagina)
         sopa, success = validar_pagina_servidores(pagina)
         if success:
             lista = listar_servidores_pagina(sopa)
             print('total de servidores listados: {0}'.format(len(lista)))
             for servidor in lista:
+                print('Id Servidor', servidor[0])
+                print('Url Servidor', servidor[1])
                 valor = obter_remuneracao_servidor(servidor[1])
                 linha = '{0}, {1}\n'.format(servidor[0], valor)
                 arquivo.write(linha)
                 print(linha)
         else:
             break
+        fim = timeit.default_timer()
+        print('duracao de processamento da pagina: %f' %(fim - inicio))
     arquivo.close()
     print('arquivo gerado com sucesso!')
     
