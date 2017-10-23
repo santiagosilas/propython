@@ -53,7 +53,7 @@ def obter_remuneracao_servidor(url_servidor):
     
 def salvar_salarios_servidores():
     arquivo = open('servidores.txt', 'w')
-    for numero_pagina in [1,2, 50000]:
+    for numero_pagina in range(5000):
         pagina = obter_pagina_servidores(numero_pagina)
         sopa, success = validar_pagina_servidores(pagina)
         if success:
