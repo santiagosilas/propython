@@ -13,6 +13,7 @@ sopa = BS(pagina.content, 'html.parser')
 
 # obtém uma lista de tags elementos <p>
 lista_parágrafos = sopa.find_all('p')
+print(lista_parágrafos)
 
 # O parágrafo
 parágrafo = lista_parágrafos[0]

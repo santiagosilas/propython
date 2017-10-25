@@ -1,6 +1,5 @@
 # coding: utf-8
 import requests
-
 url = 'https://dataquestio.github.io/web-scraping-pages/simple.html'
 pagina = requests.get(url)
 
